@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZapretGUI</title>
+<style>
+:root{
+  --bg:#0b0f14; --bg2:#0f141c; --card:#131a24; --card2:#171f2b; --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.12);
+  --tx:#e8edf5; --mut:#8792a6; --dim:#5b6578;
+  --a1:#2ee6a6; --a2:#1fb6ff; --ok:#3ddc97; --warn:#ffb547; --bad:#ff5d6c;
+  --r:16px; --font:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; --mono:"Cascadia Mono",Consolas,monospace;
+}
+[data-accent=violet]{--a1:#a78bff;--a2:#ff6fd8}
+[data-accent=amber]{--a1:#ffc247;--a2:#ff6a3d}
+[data-accent=ice]{--a1:#7cd4ff;--a2:#5b7bff}
+[data-accent=rose]{--a1:#ff5c8a;--a2:#ffa05c}
+[data-accent=lime]{--a1:#c6f35c;--a2:#34d399}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font:14px/1.45 var(--font);overflow:hidden;user-select:none;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(700px 420px at 78% -10%,color-mix(in srgb,var(--a2) 16%,transparent),transparent 70%),
+             radial-gradient(600px 500px at 10% 110%,color-mix(in srgb,var(--a1) 10%,transparent),transparent 70%)}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+.app{display:grid;grid-template-columns:232px 1fr;height:100%;position:relative}
+
+/* ---------- sidebar ---------- */
+.side{padding:22px 14px 16px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.015),transparent)}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 10px 22px}
+.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--a1),var(--a2));box-shadow:0 6px 22px -6px color-mix(in srgb,var(--a1) 70%,transparent)}
+.logo svg{width:20px;height:20px}
+.brand b{font-size:17px;letter-spacing:.2px;font-weight:650}
+.brand small{display:block;color:var(--mut);font-size:11.5px;margin-top:-1px}
+.nav{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;color:var(--mut);font-weight:500;transition:.15s;position:relative}
+.nav svg{width:18px;height:18px;flex:none;opacity:.9}
+.nav:hover{background:rgba(255,255,255,.04);color:var(--tx)}
+.nav.on{background:rgba(255,255,255,.06);color:var(--tx)}
+.nav.on::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(var(--a1),var(--a2))}
+.nav .pip{margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);display:none}
+.nav .pip.show{display:block}
+.side .grow{flex:1}
+.credit{padding:12px;border-radius:12px;border:1px solid var(--line);color:var(--mut);font-size:11.5px;line-height:1.5}
+.credit a{color:var(--tx);text-decoration:none;font-weight:600;cursor:pointer}
+.credit a:hover{color:var(--a1)}
+
+/* ---------- main ---------- */
+.main{overflow:auto;padding:26px 30px 30px;position:relative}
+.page{display:none;animation:in .28s ease}
+.page.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font-size:24px;font-weight:650;letter-spacing:-.2px}
+.sub{color:var(--mut);margin-top:3px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}
+.card{background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--card) 70%,var(--bg)));border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.card h3{font-size:13px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.grid{display:grid;gap:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 16px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid var(--line2);font-weight:550;transition:.15s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn:active{transform:scale(.98)}
+.btn svg{width:16px;height:16px}
+.btn.pri{background:linear-gradient(135deg,var(--a1),var(--a2));color:#071017;border:0;box-shadow:0 8px 24px -10px color-mix(in srgb,var(--a1) 80%,transparent)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.ghost{background:none;border-color:transparent;color:var(--mut)}
+.btn.ghost:hover{color:var(--tx);background:rgba(255,255,255,.05)}
+.btn.danger{color:#ffb3ba;border-color:rgba(255,93,108,.3);background:rgba(255,93,108,.08)}
+.btn.sm{height:30px;padding:0 11px;font-size:12.5px;border-radius:9px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mut{color:var(--mut)}
+.tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(255,255,255,.06);color:var(--mut)}
+
+/* ---------- home ---------- */
+.home{grid-template-columns:1.25fr 1fr}
+.reactor{display:flex;flex-direction:column;align-items:center;padding:30px 24px 24px;position:relative;overflow:hidden}
+.reactor .grid-bg{position:absolute;inset:0;opacity:.35;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:28px 28px;mask:radial-gradient(circle at 50% 42%,#000 0,transparent 65%)}
+.power{position:relative;width:196px;height:196px;border-radius:50%;display:grid;place-items:center;margin:4px 0 22px}
+.power .ring{position:absolute;inset:0;pointer-events:none;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,255,255,.07),rgba(255,255,255,.02),rgba(255,255,255,.07));padding:2px;-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 0)}
+.power .ring2{position:absolute;inset:-16px;pointer-events:none;border-radius:50%;border:1px dashed rgba(255,255,255,.06)}
+.power .core{position:relative;z-index:1;width:150px;height:150px;border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:.35s;
+  background:radial-gradient(circle at 50% 35%,#1c2533,#0f151e);border:1px solid var(--line2);box-shadow:inset 0 2px 0 rgba(255,255,255,.05),0 20px 50px -20px #000}
+.power .core:hover{transform:scale(1.03)}
+.power .core svg{width:54px;height:54px;color:var(--dim);transition:.35s}
+.power.on .ring{background:conic-gradient(from 0deg,var(--a1),var(--a2),transparent 60%,var(--a1));animation:spin 3.2s linear infinite;padding:3px}
+.power.on .core{background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--a1) 30%,#152029),#0d151b);border-color:color-mix(in srgb,var(--a1) 45%,transparent);
+  box-shadow:0 0 0 10px color-mix(in srgb,var(--a1) 7%,transparent),0 0 70px -6px color-mix(in srgb,var(--a1) 55%,transparent)}
+.power.on .core svg{color:var(--a1);filter:drop-shadow(0 0 10px var(--a1))}
+.power.busy .ring{background:conic-gradient(from 0deg,var(--warn),transparent 50%);animation:spin 1s linear infinite;padding:3px}
+.power.svc .core svg{color:var(--a2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stat{font-size:22px;font-weight:650;letter-spacing:-.2px;text-align:center}
+.stat-sub{color:var(--mut);text-align:center;margin-top:4px;min-height:20px;max-width:380px}
+.picker{margin-top:20px;width:100%;max-width:400px;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid var(--line2);position:relative}
+.picker .lbl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.picker .val{font-weight:600;font-size:15px}
+.picker .open{flex:1;text-align:left;cursor:pointer}
+.chev{width:16px;height:16px;color:var(--mut)}
+.quick{margin-top:14px;display:flex;gap:8px}
+.lat{display:flex;flex-direction:column;gap:10px}
+.latrow{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:12px;padding:12px;border-radius:12px;background:rgba(0,0,0,.18);border:1px solid var(--line)}
+.ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px}
+.ico.yt{background:rgba(255,64,64,.13);color:#ff6b6b}.ico.dc{background:rgba(110,125,255,.15);color:#8f9bff}.ico.gg{background:rgba(66,200,140,.13);color:#55e0a5}
+.latrow .nm{font-weight:600}
+.bar{height:5px;border-radius:5px;background:rgba(255,255,255,.06);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:5px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.ms{font-variant-numeric:tabular-nums;font-weight:650;font-size:18px;text-align:right;min-width:74px}
+.ms small{font-size:11px;color:var(--mut);font-weight:500;margin-left:2px}
+.good{color:var(--ok)}.mid{color:var(--warn)}.bad{color:var(--bad)}
+.svcbox{display:flex;align-items:center;gap:14px}
+.svcdot{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.05);flex:none}
+.svcdot svg{width:20px;height:20px;color:var(--mut)}
+.svcdot.on{background:color-mix(in srgb,var(--a2) 16%,transparent)}.svcdot.on svg{color:var(--a2)}
+
+/* ---------- dropdown ---------- */
+.dd{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:20;background:#141b26;border:1px solid var(--line2);border-radius:14px;box-shadow:0 24px 60px -12px rgba(0,0,0,.7);padding:6px;max-height:330px;overflow:auto;display:none}
+.dd.show{display:block;animation:in .15s ease}
+.dd input{width:100%;height:34px;border-radius:9px;background:rgba(0,0,0,.3);border:1px solid var(--line);padding:0 10px;margin-bottom:6px;outline:none}
+.dd .it{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:8px 10px;border-radius:9px;color:var(--mut)}
+.dd .it:hover{background:rgba(255,255,255,.05);color:var(--tx)}
+.dd .it.cur{color:var(--tx);background:color-mix(in srgb,var(--a1) 12%,transparent)}
+.dd .it .ms2{font-size:12px;font-variant-numeric:tabular-nums}
+
+/* ---------- scan ---------- */
+.scanhead{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center}
+.seg{display:inline-flex;padding:3px;border-radius:11px;background:rgba(0,0,0,.3);border:1px solid var(--line)}
+.seg button{height:30px;padding:0 13px;border-radius:8px;color:var(--mut);font-weight:550;font-size:13px}
+.seg button.on{background:rgba(255,255,255,.09);color:var(--tx)}
+.prog{margin-top:18px;display:none}
+.prog.show{display:block}
+.prog .track{height:8px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+.prog .track i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--a1),var(--a2));border-radius:8px;transition:width .5s}
+.prog .track i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 1.4s infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.prog .info{display:flex;justify-content:space-between;margin-top:8px;color:var(--mut);font-size:12.5px}
+.results{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.res{border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.02);transition:.2s}
+.res .top{display:grid;grid-template-columns:30px minmax(150px,1.3fr) 1fr 1fr 110px 70px auto;gap:12px;align-items:center;padding:12px 14px;cursor:pointer}
+.res .rk{color:var(--dim);font-weight:700;font-variant-numeric:tabular-nums}
+.res .nm{font-weight:600;display:flex;align-items:center;min-width:0}.res .nm em{font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge{flex:none}
+.res.best{border-color:color-mix(in srgb,var(--a1) 55%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--a1) 9%,transparent),transparent 70%);box-shadow:0 10px 40px -20px color-mix(in srgb,var(--a1) 70%,transparent)}
+.res.best .rk{color:var(--a1)}
+.res.base{opacity:.62}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.chip b{width:8px;height:8px;border-radius:50%;flex:none}
+.meter{display:flex;gap:2px}
+.meter i{flex:1;height:14px;border-radius:3px;background:rgba(255,255,255,.07)}
+.meter i.f{background:linear-gradient(var(--a1),var(--a2))}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:linear-gradient(135deg,var(--a1),var(--a2));color:#071017;margin-left:8px;vertical-align:2px}
+.res .det{display:none;padding:0 14px 14px 56px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px 18px;font-size:12.5px;color:var(--mut)}
+.res.open .det{display:grid}
+.det span{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:3px 0}
+.empty{padding:40px 20px;text-align:center;color:var(--mut);border:1px dashed var(--line2);border-radius:14px;margin-top:16px}
+.empty svg{width:42px;height:42px;color:var(--dim);margin-bottom:10px}
+.besthero{display:none;margin-top:16px;align-items:center;gap:16px;padding:16px 18px;border-radius:14px;background:linear-gradient(110deg,color-mix(in srgb,var(--a1) 18%,transparent),color-mix(in srgb,var(--a2) 10%,transparent));border:1px solid color-mix(in srgb,var(--a1) 40%,transparent)}
+.besthero.show{display:flex}
+.besthero .big{font-size:18px;font-weight:650}
+
+/* ---------- forms ---------- */
+.set{grid-template-columns:1fr 1fr}
+.field{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.field:last-child{border-bottom:0}
+.field>div:first-child{flex:1;min-width:0}.field .seg,.field .inp,.field .sw{flex:none}.field .t{font-weight:550}.field .d{color:var(--mut);font-size:12.5px;margin-top:1px}
+.sw{position:relative;width:42px;height:24px;flex:none;border-radius:999px;background:rgba(255,255,255,.1);cursor:pointer;transition:.2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#cfd6e3;transition:.2s cubic-bezier(.3,.7,.3,1.3)}
+.sw.on{background:linear-gradient(135deg,var(--a1),var(--a2))}
+.sw.on::after{left:21px;background:#fff}
+.inp{height:34px;border-radius:9px;background:rgba(0,0,0,.28);border:1px solid var(--line2);padding:0 10px;outline:none;width:190px;font-family:var(--mono);font-size:12.5px}
+.inp:focus{border-color:color-mix(in srgb,var(--a1) 60%,transparent)}
+.swatches{display:flex;gap:8px}
+.swatch{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s}
+.swatch.on{border-color:#fff;transform:scale(1.1)}
+textarea.list{width:100%;height:calc(100vh - 290px);min-height:220px;resize:none;border-radius:12px;background:rgba(0,0,0,.3);border:1px solid var(--line2);padding:14px;font:12.5px/1.6 var(--mono);outline:none;user-select:text}
+textarea.list:focus{border-color:color-mix(in srgb,var(--a1) 50%,transparent)}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button{height:32px;padding:0 13px;border-radius:9px;color:var(--mut);border:1px solid var(--line);font-weight:550;font-size:13px}
+.tabs button.on{color:var(--tx);border-color:color-mix(in srgb,var(--a1) 50%,transparent);background:color-mix(in srgb,var(--a1) 10%,transparent)}
+.console{height:calc(100vh - 210px);min-height:240px;overflow:auto;border-radius:12px;background:#080b10;border:1px solid var(--line);padding:14px;font:12px/1.65 var(--mono);color:#aeb8c9;user-select:text;white-space:pre-wrap;word-break:break-all}
+.console .l-ok{color:var(--ok)}.console .l-err{color:var(--bad)}
+
+/* ---------- about ---------- */
+.abouthero{display:flex;gap:20px;align-items:center}
+.abouthero .logo{width:64px;height:64px;border-radius:18px}.abouthero .logo svg{width:34px;height:34px}
+.basedon{margin-top:18px;padding:18px;border-radius:14px;border:1px solid color-mix(in srgb,var(--a1) 35%,transparent);background:color-mix(in srgb,var(--a1) 6%,transparent);line-height:1.6}
+.basedon b{color:var(--a1)}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.lnk{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;transition:.15s}
+.lnk:hover{border-color:var(--line2);background:rgba(255,255,255,.04)}
+.lnk svg{width:22px;height:22px;flex:none}
+.lnk small{display:block;color:var(--mut)}
+
+/* ---------- overlays ---------- */
+.toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{min-width:260px;max-width:380px;padding:12px 14px;border-radius:12px;background:#18202c;border:1px solid var(--line2);box-shadow:0 18px 40px -12px rgba(0,0,0,.6);display:flex;gap:10px;animation:tin .25s ease}
+.toast b{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;background:var(--a1)}
+.toast.err b{background:var(--bad)}.toast.warn b{background:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}}
+.modal{position:fixed;inset:0;background:rgba(4,6,10,.62);backdrop-filter:blur(6px);display:none;place-items:center;z-index:60}
+.modal.show{display:grid;animation:in .18s}
+.modal .box{width:min(460px,90vw);background:#141b26;border:1px solid var(--line2);border-radius:18px;padding:22px;box-shadow:0 30px 80px -20px #000}
+.modal h2{font-size:18px;font-weight:650;margin-bottom:8px}
+.modal p{color:var(--mut);white-space:pre-wrap}
+.modal pre{margin-top:10px;max-height:50vh;overflow:auto;font:11.5px/1.5 var(--mono);color:#aeb8c9;white-space:pre-wrap;user-select:text}
+.modal .row{justify-content:flex-end;margin-top:20px}
+.banner{display:none;margin-bottom:16px;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,181,71,.3);background:rgba(255,181,71,.07);align-items:center;gap:12px}
+.banner.show{display:flex}
+@media (max-width:920px){.home,.set{grid-template-columns:1fr}.res .top{grid-template-columns:26px minmax(120px,1fr) 1fr 1fr 70px auto}.res .top .mcol{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#071017" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12.5l2 2 4-4.5"/></svg></div>
+      <div><b>ZapretGUI</b><small>Discord · YouTube</small></div>
+    </div>
+    <button class="nav on" data-p="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>Главная<span class="pip" id="navPip"></span></button>
+    <button class="nav" data-p="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h3l3-8 4 16 3-8h5"/></svg>Подбор и пинг</button>
+    <button class="nav" data-p="lists"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Списки</button>
+    <button class="nav" data-p="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Настройки</button>
+    <button class="nav" data-p="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg>Журнал</button>
+    <button class="nav" data-p="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>О программе</button>
+    <div class="grow"></div>
+    <div class="credit">Основано на исходниках<br><a data-url="https://github.com/Flowseal/zapret-discord-youtube">Flowseal / zapret-discord-youtube</a><br>движок <a data-url="https://github.com/bol-van/zapret">zapret · bol-van</a></div>
+  </aside>
+
+  <main class="main">
+    <!-- HOME -->
+    <section class="page on" id="p-home">
+      <div class="head"><div><h1 id="hello">Обход блокировок</h1><div class="sub">Включите одной кнопкой. Не работает — подберите стратегию автоматически.</div></div></div>
+      <div class="banner" id="svcBanner"><span>⚡</span><div style="flex:1" id="svcBannerText"></div><button class="btn sm" onclick="removeService()">Удалить службу</button></div>
+      <div class="grid home">
+        <div class="card reactor">
+          <div class="grid-bg"></div>
+          <div class="power" id="power">
+            <div class="ring2"></div><div class="ring"></div>
+            <button class="core" id="powerBtn" title="Включить / выключить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 2.5v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></svg></button>
+          </div>
+          <div class="stat" id="stat">Выключено</div>
+          <div class="stat-sub" id="statSub">Нажмите на кнопку, чтобы включить обход</div>
+          <div class="picker" id="picker">
+            <div class="open" id="pickOpen"><div class="lbl">Стратегия</div><div class="val" id="pickVal">general</div></div>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            <button class="btn sm" id="nextBtn" title="Следующая стратегия">Следующая ⟳</button>
+            <div class="dd" id="dd"><input id="ddSearch" placeholder="Поиск стратегии…"><div id="ddList"></div></div>
+          </div>
+          <div class="quick">
+            <button class="btn sm ghost" onclick="go('scan');startScan()">✦ Подобрать лучшую автоматически</button>
+          </div>
+        </div>
+        <div class="grid" style="align-content:start">
+          <div class="card">
+            <h3>Задержка сейчас <span style="flex:1"></span><button class="btn sm" id="pingBtn" onclick="ping()">Пингануть</button></h3>
+            <div class="lat" id="lat"></div>
+            <div class="mut" style="font-size:12px;margin-top:10px" id="pingNote">Время ответа по HTTPS с текущими настройками</div>
+          </div>
+          <div class="card">
+            <h3>Автозапуск с Windows</h3>
+            <div class="svcbox">
+              <div class="svcdot" id="svcDot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+              <div style="flex:1"><div style="font-weight:600" id="svcT">Не установлен</div><div class="mut" style="font-size:12.5px" id="svcD">Обход работает, пока открыта программа</div></div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn sm" id="svcInstall" onclick="installService()">Установить службу</button>
+              <button class="btn sm danger" id="svcRemove" onclick="removeService()">Удалить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCAN -->
+    <section class="page" id="p-scan">
+      <div class="head"><div><h1>Подбор и пинг</h1><div class="sub">Программа по очереди включит каждую стратегию Flowseal и измерит доступность и задержку YouTube и Discord.</div></div></div>
+      <div class="card">
+        <div class="scanhead">
+          <div>
+            <div style="font-weight:600;font-size:15px">Найти обход с наименьшей задержкой</div>
+            <div class="mut" style="font-size:12.5px;margin-top:3px">8 адресов YouTube и Discord + проверка докачки 48 КБ (ловит «заморозку» на 16–20 КБ). Интернет на время теста может мигать.</div>
+            <div class="row" style="margin-top:12px">
+              <div class="seg" id="modeSeg"><button data-m="0" class="on">Быстрый · ~1 мин</button><button data-m="1">Полный TLS 1.2+1.3 · ~2 мин</button></div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn pri" id="scanBtn" onclick="startScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 3l14 9-14 9V3z"/></svg>Начать подбор</button>
+            <button class="btn danger" id="cancelBtn" style="display:none" onclick="api('cancelScan')">Остановить</button>
+          </div>
+        </div>
+        <div class="prog" id="prog"><div class="track"><i id="progBar"></i></div><div class="info"><span id="progName">—</span><span id="progCnt">0 / 0</span></div></div>
+      </div>
+      <div class="besthero" id="bestHero">
+        <div class="logo" style="width:44px;height:44px;border-radius:13px"><svg viewBox="0 0 24 24" fill="none" stroke="#071017" stroke-width="2.4" stroke-linecap="round"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21l1.5-7L2 9.3l7-.8z"/></svg></div>
+        <div style="flex:1"><div class="mut" style="font-size:12px">Лучшая стратегия для вашего провайдера</div><div class="big" id="bestName">—</div><div class="mut" style="font-size:12.5px" id="bestInfo"></div></div>
+        <button class="btn pri" id="bestApply">Применить и включить</button>
+        <button class="btn" id="bestSvc">В автозапуск</button>
+      </div>
+      <div class="results" id="results"></div>
+      <div class="empty" id="scanEmpty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 12h3l3-8 4 16 3-8h5"/></svg><div>Результатов пока нет. Нажмите «Начать подбор».</div></div>
+    </section>
+
+    <!-- LISTS -->
+    <section class="page" id="p-lists">
+      <div class="head"><div><h1>Списки</h1><div class="sub">Один домен или IP/подсеть на строку. Строки с # — комментарии.</div></div>
+        <div class="row"><button class="btn pri" onclick="saveList()">Сохранить</button></div></div>
+      <div class="tabs" id="listTabs"></div>
+      <textarea class="list" id="listText" spellcheck="false"></textarea>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" id="p-settings">
+      <div class="head"><div><h1>Настройки</h1><div class="sub">Те же параметры, что в меню service.bat, только удобнее.</div></div>
+        <div class="row"><button class="btn pri" onclick="saveSettings()">Сохранить</button></div></div>
+      <div class="grid set">
+        <div class="card">
+          <h3>Фильтры</h3>
+          <div class="field"><div><div class="t">Игровой фильтр</div><div class="d">Обход для игр на портах 1024+</div></div>
+            <div class="seg" id="gameSeg"><button data-v="disabled">Выкл</button><button data-v="all">TCP+UDP</button><button data-v="tcp">TCP</button><button data-v="udp">UDP</button></div></div>
+          <div class="field"><div><div class="t">Порты TCP</div><div class="d">пример: 1024-1934,1936-65535</div></div><input class="inp" id="gTCP"></div>
+          <div class="field"><div><div class="t">Порты UDP</div></div><input class="inp" id="gUDP"></div>
+          <div class="field"><div><div class="t">IPSet-фильтр</div><div class="d">none — выкл, any — любые IP, loaded — по списку</div></div>
+            <div class="seg" id="ipsetSeg"><button data-v="none">none</button><button data-v="any">any</button><button data-v="loaded">loaded</button></div></div>
+          <div class="field"><div><div class="t">Список IP Flowseal</div><div class="d">Скачать свежий список для режима loaded</div></div><button class="btn sm" onclick="updateIPSet(this)">Обновить</button></div>
+        </div>
+        <div class="card">
+          <h3>Поведение</h3>
+          <div class="field"><div><div class="t">Включать обход при запуске программы</div></div><div class="sw" data-k="auto_start"></div></div>
+          <div class="field"><div><div class="t">Закрытие окна сворачивает в трей</div></div><div class="sw" data-k="minimize_to_tray"></div></div>
+          <div class="field"><div><div class="t">Запускаться свёрнутым</div></div><div class="sw" data-k="start_minimized"></div></div>
+          <div class="field"><div><div class="t">TCP timestamps</div><div class="d">Включать перед запуском, как в оригинале</div></div><div class="sw" data-k="tcp_timestamps"></div></div>
+          <div class="field"><div><div class="t">Проверять обновления Flowseal</div></div><div class="sw" data-k="check_updates"></div></div>
+          <div class="field"><div><div class="t">Цвет интерфейса</div></div><div class="swatches" id="swatches"></div></div>
+        </div>
+        <div class="card" style="grid-column:1/-1">
+          <h3>Инструменты</h3>
+          <div class="row">
+            <button class="btn" onclick="clearDiscord()">Очистить кэш Discord</button>
+            <button class="btn" onclick="api('open','folder')">Открыть папку с файлами</button>
+            <button class="btn" onclick="checkUpdates()">Проверить обновления Flowseal</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section class="page" id="p-log">
+      <div class="head"><div><h1>Журнал</h1><div class="sub">Вывод winws.exe и действия программы</div></div>
+        <div class="row"><button class="btn sm" onclick="showCmd()">Команда запуска</button><button class="btn sm" onclick="copyLog()">Копировать</button><button class="btn sm ghost" onclick="$('#console').innerHTML=''">Очистить</button></div></div>
+      <div class="console" id="console"></div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="page" id="p-about">
+      <div class="card">
+        <div class="abouthero">
+          <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#071017" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z"/><path d="M9 12.5l2 2 4-4.5"/></svg></div>
+          <div><h1>ZapretGUI <span class="tag" id="ver">2.0.0</span></h1><div class="sub">Графическая оболочка для обхода DPI-блокировок Discord и YouTube</div></div>
+        </div>
+        <div class="basedon">
+          Всё основано на исходниках проекта <b>zapret-discord-youtube от Flowseal</b>: стратегии, списки доменов и IP, winws.exe, WinDivert и fake-пакеты взяты оттуда без изменений (версия Flowseal <b id="fsVer">—</b>).
+          ZapretGUI только заменяет .bat-файлы и консольное меню service.bat на этот интерфейс и добавляет автоподбор стратегии.
+          Сам движок обхода — <b>zapret (winws) от bol-van</b>.
+        </div>
+        <div class="links">
+          <div class="lnk" data-url="https://github.com/Flowseal/zapret-discord-youtube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.2-3.1-.1-.4-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.8.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg><div><b>Flowseal / zapret-discord-youtube</b><small>Стратегии, списки, сборка под Windows</small></div></div>
+          <div class="lnk" data-url="https://github.com/bol-van/zapret"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.2-3.1-.1-.4-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.8.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg><div><b>bol-van / zapret</b><small>Движок обхода DPI (winws)</small></div></div>
+        </div>
+        <div class="row" style="margin-top:16px"><button class="btn" onclick="showLicense()">Лицензия MIT</button><span class="mut" style="font-size:12.5px">© 2016–2026 bol-van · © 2024–2026 Flowseal</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="modal" id="modal"><div class="box"><h2 id="mT"></h2><p id="mB"></p><pre id="mPre" style="display:none"></pre><div class="row"><button class="btn ghost" id="mNo">Отмена</button><button class="btn pri" id="mYes">ОК</button></div></div></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let S=null, scanMap={}, lastScan=[], listCur=null, pingData=null, dirtySettings=null;
+const ACCENTS={mint:['#2ee6a6','#1fb6ff'],violet:['#a78bff','#ff6fd8'],amber:['#ffc247','#ff6a3d'],ice:['#7cd4ff','#5b7bff'],rose:['#ff5c8a','#ffa05c'],lime:['#c6f35c','#34d399']};
+
+/* ---- mock для предпросмотра в браузере ---- */
+if(!window.api){
+  const names=['general','general (ALT)','general (ALT2)','general (ALT3)','general (ALT4)','general (ALT5)','general (FAKE TLS AUTO)','general (SIMPLE FAKE)'];
+  const st={running:false,strategy:'general',strategies:names,service:{Installed:false,Running:false,Strategy:'',Ours:false},
+    settings:{strategy:'general',game_mode:'disabled',game_tcp:'1024-65535',game_udp:'1024-65535',ipset_mode:'none',tcp_timestamps:true,auto_start:false,minimize_to_tray:true,start_minimized:false,check_updates:true,accent:'mint'},
+    version:'2.0.0',flowseal:'1.10.4',dataDir:'C:\\ProgramData\\ZapretGUI',foreignWinws:0,lists:[{file:'list-general-user.txt',title:'Свои домены'},{file:'list-exclude-user.txt',title:'Исключения: домены'},{file:'ipset-exclude-user.txt',title:'Исключения: IP'}]};
+  const sl=ms=>new Promise(r=>setTimeout(r,ms));
+  window.api=async(m,...a)=>{await sl(250);
+    if(m==='init')return{state:st,logs:['15:00:01  ZapretGUI 2.0.0 · файлы Flowseal 1.10.4']};
+    if(m==='start'||m==='select'){st.strategy=a[0];if(m==='start')st.running=true;return st}
+    if(m==='stop'){st.running=false;return st}
+    if(m==='next'){st.strategy=names[(names.indexOf(st.strategy)+1)%names.length];st.running=true;return st}
+    if(m==='ping'){await sl(600);return[{group:'youtube',name:'YouTube',ok:st.running,ms:st.running?138:4000},{group:'discord',name:'Discord',ok:true,ms:84},{group:'google',name:'Google',ok:true,ms:52}]}
+    if(m==='getList')return'# Never leave this file empty\ndomain.example.abc\n';
+    if(m==='scan'){(async()=>{onEvent('scan',{type:'start',total:names.length+1});const all=['Без обхода',...names];const rs=[];
+      for(let i=0;i<all.length;i++){onEvent('scan',{type:'progress',index:i,total:all.length,name:all[i]});await sl(300);
+        const base=i===0,yo=base?0:Math.floor(Math.random()*6),dok=base?2:3+Math.floor(Math.random()*3);
+        const r={strategy:all[i],ok:yo+dok,total:10,ms:base?60:80+Math.floor(Math.random()*240),baseline:base,groups:{youtube:{ok:yo,total:5,ms:yo?120+Math.floor(Math.random()*200):0},discord:{ok:dok,total:5,ms:70+Math.floor(Math.random()*120)}},checks:[{group:'youtube',name:'YouTube',kind:'tls13',ok:!!yo,ms:140},{group:'discord',name:'Discord',kind:'load',ok:true,ms:310}]};
+        rs.push(r);onEvent('scan',{type:'result',result:r});}
+      rs.sort((x,y)=>(x.baseline-y.baseline)||(y.ok-x.ok)||(x.ms-y.ms));onEvent('scan',{type:'done',best:rs[0].strategy,results:rs});})();return null}
+    if(m==='command')return'winws.exe --wf-tcp=80,443 ...';if(m==='license')return'MIT License';
+    return st};
+}
+
+/* ---- utils ---- */
+function toast(t,k=''){const d=document.createElement('div');d.className='toast '+k;d.innerHTML='<b></b><div></div>';d.lastChild.textContent=t;$('#toasts').append(d);setTimeout(()=>{d.style.opacity=0;d.style.transition='.3s';setTimeout(()=>d.remove(),300)},4200)}
+function modal(title,body,{ok='ОК',cancel='Отмена',pre=null}={}){return new Promise(res=>{$('#mT').textContent=title;$('#mB').textContent=body;$('#mPre').style.display=pre?'block':'none';$('#mPre').textContent=pre||'';
+  $('#mYes').textContent=ok;$('#mNo').style.display=cancel?'':'none';$('#mNo').textContent=cancel||'';$('#modal').classList.add('show');
+  const done=v=>{$('#modal').classList.remove('show');$('#mYes').onclick=$('#mNo').onclick=null;res(v)};$('#mYes').onclick=()=>done(true);$('#mNo').onclick=()=>done(false)})}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function cls(ms,ok){if(!ok)return'bad';return ms<180?'good':ms<450?'mid':'bad'}
+function go(p){$$('.nav').forEach(n=>n.classList.toggle('on',n.dataset.p===p));$$('.page').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='lists'&&!listCur)loadList(S.lists[0].file)}
+$$('.nav').forEach(n=>n.onclick=()=>go(n.dataset.p));
+document.addEventListener('click',e=>{const u=e.target.closest('[data-url]');if(u)api('open',u.dataset.url);if(!e.target.closest('#picker'))$('#dd').classList.remove('show')});
+function setAccent(k){document.documentElement.dataset.accent=k==='mint'?'':k}
+
+/* ---- state ---- */
+async function call(m,...a){try{const r=await api(m,...a);if(r&&r.strategies)render(r);return r}catch(e){return handleErr(e,m,a)}}
+async function handleErr(e,m,a){
+  if(e==='foreign'){if(await modal('Уже запущен другой обход','Работает winws.exe, запущенный не из ZapretGUI (например, .bat-файлом Flowseal). Закрыть его и включить обход здесь?',{ok:'Закрыть и включить'}))return call('start',a[0],true);return}
+  if(e==='service'){toast('Работает служба автозапуска. Удалите её, чтобы управлять вручную.','warn');return}
+  toast(String(e),'err')}
+function render(st){
+  S=st;const on=st.running,svc=st.service.Running;
+  if(!dirtySettings)applySettingsUI(st.settings);
+  $('#power').className='power'+(on?' on':svc?' on svc':'');
+  $('#stat').textContent=on?'Обход включён':svc?'Работает служба':'Обход выключен';
+  $('#statSub').textContent=on?'YouTube и Discord идут через обход DPI':svc?'Стратегия службы: '+(st.service.Strategy||'—'):'Нажмите на кнопку, чтобы включить';
+  $('#pickVal').textContent=st.strategy;$('#navPip').classList.toggle('show',on||svc);
+  $('#powerBtn').disabled=$('#nextBtn').disabled=svc||st.scanning;
+  $('#svcBanner').classList.toggle('show',svc);$('#svcBannerText').textContent='Обход работает через службу автозапуска (стратегия «'+(st.service.Strategy||'—')+'»). Ручное управление недоступно, пока служба установлена.';
+  $('#svcDot').classList.toggle('on',st.service.Installed);
+  $('#svcT').textContent=!st.service.Installed?'Не установлен':svc?'Работает':'Установлен, не запущен';
+  $('#svcD').textContent=!st.service.Installed?'Обход работает, пока открыта программа':'Стратегия: '+(st.service.Strategy||'—')+(st.service.Ours?'':' · создана service.bat Flowseal');
+  $('#svcInstall').textContent=st.service.Installed?'Переустановить с «'+st.strategy+'»':'Установить с «'+st.strategy+'»';
+  $('#svcRemove').style.display=st.service.Installed?'':'none';
+  $('#ver').textContent=st.version;$('#fsVer').textContent=st.flowseal;
+  $('#scanBtn').style.display=st.scanning?'none':'';$('#cancelBtn').style.display=st.scanning?'':'none';
+  renderDD();
+}
+function renderDD(){const q=$('#ddSearch').value.toLowerCase();$('#ddList').innerHTML=S.strategies.filter(n=>n.toLowerCase().includes(q)).map(n=>{const r=scanMap[n];
+  const m=r?`<span class="ms2 ${cls(r.ms,r.ok)}">${r.ok}/${r.total} · ${r.ms} мс</span>`:'';return`<button class="it ${n===S.strategy?'cur':''}" data-n="${esc(n)}"><span>${esc(n)}</span>${m}</button>`}).join('');
+  $$('#ddList .it').forEach(b=>b.onclick=async()=>{$('#dd').classList.remove('show');await call('select',b.dataset.n);toast('Стратегия: '+b.dataset.n)})}
+$('#pickOpen').onclick=()=>{$('#dd').classList.toggle('show');$('#ddSearch').value='';renderDD();setTimeout(()=>$('#ddSearch').focus(),20)};
+$('#ddSearch').oninput=renderDD;
+$('#powerBtn').onclick=async()=>{$('#power').classList.add('busy');await call(S.running?'stop':'start',S.strategy,false);$('#power').classList.remove('busy');if(S.running)setTimeout(ping,1200)};
+$('#nextBtn').onclick=async()=>{$('#power').classList.add('busy');await call('next');$('#power').classList.remove('busy');if(S.running){toast('Стратегия: '+S.strategy);setTimeout(ping,1200)}};
+
+/* ---- ping ---- */
+function renderLat(d){const L=[['youtube','YT','yt','YouTube'],['discord','DC','dc','Discord'],['google','G','gg','Google']];
+  $('#lat').innerHTML=L.map(([g,ab,c,nm])=>{const p=d&&d.find(x=>x.group===g);const ok=p&&p.ok;const w=p?(ok?Math.max(6,100-Math.min(p.ms,800)/8):100):0;
+    const val=!p?'<span class="mut">—</span>':ok?`${p.ms}<small>мс</small>`:'нет';
+    return`<div class="latrow"><div class="ico ${c}">${ab}</div><div><div class="nm">${nm}</div><div class="bar"><i style="width:${w}%;background:${!p?'transparent':ok?`var(--${cls(p.ms,1)==='good'?'ok':cls(p.ms,1)==='mid'?'warn':'bad'})`:'var(--bad)'}"></i></div></div><div class="ms ${p?cls(p.ms,ok):''}">${val}</div></div>`}).join('')}
+async function ping(){const b=$('#pingBtn');b.disabled=true;b.textContent='Пингуем…';try{pingData=await api('ping');renderLat(pingData);
+  $('#pingNote').textContent='Проверено в '+new Date().toLocaleTimeString('ru-RU')+(S.running?' · стратегия «'+S.strategy+'»':' · без обхода')}catch(e){toast(String(e),'err')}b.disabled=false;b.textContent='Пингануть'}
+
+/* ---- scan ---- */
+let mode=0;$$('#modeSeg button').forEach(b=>b.onclick=()=>{mode=+b.dataset.m;$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b))});
+async function startScan(){if(S&&S.service.Running){toast('Сначала удалите службу автозапуска — подбор переключает стратегии.','warn');return}
+  if(S&&S.scanning)return;scanMap={};lastScan=[];$('#results').innerHTML='';$('#bestHero').classList.remove('show');$('#scanEmpty').style.display='none';
+  $('#scanBtn').style.display='none';$('#cancelBtn').style.display='';
+  try{await api('scan',mode===1)}catch(e){toast(String(e),'err');$('#scanBtn').style.display='';$('#cancelBtn').style.display='none';$('#prog').classList.remove('show')}}
+function chip(g){if(!g)return'<span class="mut">—</span>';const ok=g.ok===g.total,part=g.ok>0;const c=ok?'var(--ok)':part?'var(--warn)':'var(--bad)';
+  return`<span class="chip"><b style="background:${c};box-shadow:0 0 8px ${c}"></b>${g.ok}/${g.total}${g.ms?` · ${g.ms} мс`:''}</span>`}
+function renderResults(){const rs=[...lastScan].sort((x,y)=>(!!x.baseline-!!y.baseline)||(y.ok-x.ok)||((x.ms||1e9)-(y.ms||1e9)));
+  const best=rs.find(r=>!r.baseline&&r.ok>0);
+  $('#results').innerHTML=`<div class="res" style="border:0;background:none"><div class="top mut" style="cursor:default;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;padding-top:2px;padding-bottom:0"><span>#</span><span>Стратегия</span><span>YouTube</span><span>Discord</span><span class="mcol">Успешно</span><span>Пинг</span><span></span></div></div>`+
+  rs.map((r,i)=>{const n=r.total||1,f=Math.round(r.ok/n*10);const isBest=best&&r.strategy===best.strategy;
+    return`<div class="res ${isBest?'best':''} ${r.baseline?'base':''}" data-n="${esc(r.strategy)}"><div class="top">
+      <span class="rk">${r.baseline?'·':i+1}</span><span class="nm"><em>${esc(r.strategy)}</em>${isBest?'<span class="badge">лучшая</span>':''}</span>
+      <span>${chip(r.groups.youtube)}</span><span>${chip(r.groups.discord)}</span>
+      <span class="mcol"><div class="meter">${Array.from({length:10},(_,k)=>`<i class="${k<f?'f':''}"></i>`).join('')}</div></span>
+      <span class="ms ${r.ms?cls(r.ms,1):'bad'}" style="font-size:14px">${r.ms?r.ms+'<small>мс</small>':'—'}</span>
+      <span>${r.baseline?'':`<button class="btn sm" data-apply="${esc(r.strategy)}">Включить</button>`}</span></div>
+      <div class="det">${(r.checks||[]).map(c=>`<span><span>${esc(c.name)} · ${c.kind==='load'?'докачка 48 КБ':c.kind==='tls12'?'TLS 1.2':'TLS 1.3'}</span><span class="${c.ok?'good':'bad'}">${c.ok?c.ms+' мс':'ошибка'}</span></span>`).join('')}</div></div>`}).join('');
+  $$('#results .res[data-n]').forEach(el=>el.querySelector('.top').onclick=e=>{if(!e.target.closest('button'))el.classList.toggle('open')});
+  $$('[data-apply]').forEach(b=>b.onclick=()=>applyStrategy(b.dataset.apply));
+  return best}
+async function applyStrategy(n){go('home');await call('start',n,true);if(S&&S.running){toast('Включено: '+n);setTimeout(ping,1200)}}
+function onScan(d){
+  if(d.type==='start'){$('#prog').classList.add('show');$('#progBar').style.width='0';if(S)S.scanning=true;$('#powerBtn').disabled=true}
+  if(d.type==='progress'){$('#progBar').style.width=(d.index/d.total*100)+'%';$('#progName').textContent='Проверяется: '+d.name;$('#progCnt').textContent=(d.index+1)+' / '+d.total}
+  if(d.type==='result'){lastScan.push(d.result);if(!d.result.baseline)scanMap[d.result.strategy]=d.result;renderResults()}
+  if(d.type==='done'){$('#progBar').style.width='100%';setTimeout(()=>$('#prog').classList.remove('show'),700);$('#scanBtn').style.display='';$('#cancelBtn').style.display='none';
+    const best=renderResults();
+    if(best){const yt=best.groups.youtube||{},dc=best.groups.discord||{};$('#bestName').textContent=best.strategy;
+      $('#bestInfo').textContent=`Успешно ${best.ok} из ${best.total} проверок · средний пинг ${best.ms} мс · YouTube ${yt.ok}/${yt.total} · Discord ${dc.ok}/${dc.total}`;
+      $('#bestHero').classList.add('show');$('#bestApply').onclick=()=>applyStrategy(best.strategy);
+      $('#bestSvc').onclick=async()=>{if(await modal('Автозапуск','Установить службу со стратегией «'+best.strategy+'»? Обход будет включаться сам при старте Windows.',{ok:'Установить'})){await call('installService',best.strategy);toast('Служба установлена')}};
+      toast((d.cancelled?'Подбор остановлен. ':'Подбор завершён. ')+'Лучшая: '+best.strategy)}
+    else toast('Ни одна стратегия не прошла проверки. Попробуйте полный режим или IPSet «any».','warn')}
+}
+
+/* ---- service ---- */
+async function installService(){if(await modal('Автозапуск с Windows','Установить службу со стратегией «'+S.strategy+'»?\nОбход будет включаться сам при старте Windows, даже без открытой программы.',{ok:'Установить'})){await call('installService',S.strategy);if(S.service.Installed)toast('Служба установлена')}}
+async function removeService(){if(await modal('Удалить службу?','Обход перестанет включаться при старте Windows.',{ok:'Удалить'})){await call('removeService');toast('Служба удалена')}}
+
+/* ---- settings ---- */
+function seg(id,v){$$('#'+id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
+function segVal(id){const b=$('#'+id+' button.on');return b?b.dataset.v:''}
+function applySettingsUI(s){seg('gameSeg',s.game_mode);seg('ipsetSeg',s.ipset_mode);$('#gTCP').value=s.game_tcp;$('#gUDP').value=s.game_udp;
+  $$('.sw').forEach(w=>w.classList.toggle('on',!!s[w.dataset.k]));$$('.swatch').forEach(w=>w.classList.toggle('on',w.dataset.k===(s.accent||'mint')));setAccent(s.accent||'mint')}
+['gameSeg','ipsetSeg'].forEach(id=>$$('#'+id+' button').forEach(b=>b.onclick=()=>{seg(id,b.dataset.v);dirtySettings=1}));
+$$('.sw').forEach(w=>w.onclick=()=>{w.classList.toggle('on');dirtySettings=1});
+$('#gTCP').oninput=$('#gUDP').oninput=()=>dirtySettings=1;
+$('#swatches').innerHTML=Object.entries(ACCENTS).map(([k,[a,b]])=>`<div class="swatch" data-k="${k}" style="background:linear-gradient(135deg,${a},${b})"></div>`).join('');
+$$('.swatch').forEach(w=>w.onclick=()=>{$$('.swatch').forEach(x=>x.classList.toggle('on',x===w));setAccent(w.dataset.k);dirtySettings=1});
+async function saveSettings(){const s=Object.assign({},S.settings,{game_mode:segVal('gameSeg'),ipset_mode:segVal('ipsetSeg'),game_tcp:$('#gTCP').value,game_udp:$('#gUDP').value,
+  accent:($('.swatch.on')||{dataset:{k:'mint'}}).dataset.k});$$('.sw').forEach(w=>s[w.dataset.k]=w.classList.contains('on'));
+  try{const r=await api('saveSettings',s);dirtySettings=null;S.settings=s;toast('Настройки сохранены');
+    if(r.needRestart&&await modal('Перезапустить обход?','Изменения фильтров применятся после перезапуска.',{ok:'Перезапустить'}))await call('start',S.strategy,true);
+    else if(r.serviceNeedsReset)toast('Для службы автозапуска нажмите «Переустановить» на главной.','warn')}catch(e){toast(String(e),'err')}}
+async function updateIPSet(b){b.disabled=true;b.textContent='Загрузка…';try{const n=await api('updateIPSet');toast('Список IP обновлён: '+n+' записей')}catch(e){toast(String(e),'err')}b.disabled=false;b.textContent='Обновить'}
+async function clearDiscord(){if(await modal('Очистить кэш Discord?','Discord будет закрыт, папки Cache, Code Cache и GPUCache удалятся. Помогает, если Discord завис на подключении.',{ok:'Очистить'})){const r=await api('clearDiscord');modal('Готово',r.join('\n'),{cancel:null})}}
+async function checkUpdates(){try{const r=await api('checkUpdates');if(r.latest===r.local)modal('Обновления','Встроены актуальные файлы Flowseal '+r.local+'.',{cancel:null});
+  else if(await modal('Вышла новая версия','У Flowseal вышла версия '+r.latest+' (встроена '+r.local+'). Новые стратегии появятся после пересборки ZapretGUI. Открыть страницу релиза?',{ok:'Открыть'}))api('open','https://github.com/Flowseal/zapret-discord-youtube/releases/tag/'+r.latest)}catch(e){toast('Не удалось проверить: '+e,'err')}}
+
+/* ---- lists ---- */
+function renderTabs(){$('#listTabs').innerHTML=S.lists.map(l=>`<button class="${l.file===listCur?'on':''}" data-f="${l.file}">${esc(l.title)}</button>`).join('');$$('#listTabs button').forEach(b=>b.onclick=()=>loadList(b.dataset.f))}
+async function loadList(f){listCur=f;renderTabs();$('#listText').value=await api('getList',f)}
+async function saveList(){try{const running=await api('saveList',listCur,$('#listText').value);await loadList(listCur);toast('Список сохранён');
+  if(running&&await modal('Перезапустить обход?','Изменения списка применятся после перезапуска.',{ok:'Перезапустить'}))await call('start',S.strategy,true)}catch(e){toast(String(e),'err')}}
+
+/* ---- log ---- */
+function addLog(l){const c=$('#console');const atEnd=c.scrollTop+c.clientHeight>=c.scrollHeight-30;const d=document.createElement('div');d.textContent=l;
+  if(/ошибк|не удалось|error/i.test(l))d.className='l-err';else if(/запуск|установлен|лучшая/i.test(l))d.className='l-ok';c.append(d);if(c.children.length>3000)c.firstChild.remove();if(atEnd)c.scrollTop=c.scrollHeight}
+async function showCmd(){const c=await api('command');modal('Команда запуска winws','',{cancel:null,pre:c})}
+function copyLog(){navigator.clipboard.writeText($('#console').innerText).then(()=>toast('Скопировано'))}
+async function showLicense(){modal('Лицензия','',{cancel:null,pre:await api('license')})}
+
+/* ---- events from Go ---- */
+window.onEvent=(t,d)=>{if(t==='state'){if(!(S&&S.scanning&&!d.scanning&&false))render(d)}else if(t==='log')addLog(d);else if(t==='scan')onScan(d);
+  else if(t==='update')toast('У Flowseal вышла версия '+d+' — подробнее в «О программе»','warn')};
+
+(async()=>{renderLat(null);const r=await api('init');render(r.state);applySettingsUI(r.state.settings);(r.logs||[]).forEach(addLog)})();
+</script>
+</body>
+</html>
