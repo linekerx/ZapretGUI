@@ -1,0 +1,2 @@
+assets/** linguist-vendored
+ui/*.html linguist-detectable=false
